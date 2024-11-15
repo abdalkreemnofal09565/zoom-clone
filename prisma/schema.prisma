@@ -1,0 +1,69 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+
+model Conference {
+  id            BigInt     @id @default(autoincrement()) // Primary Key
+  name          String     // Conference name
+  host_user_id  BigInt     // Foreign key to User (this will be removed)
+  tenantId      Int
+  start_time    DateTime   // Conference start time
+  end_time      DateTime?  // Conference end time
+  created_at    DateTime   @default(now()) // Timestamp when the conference is created
+  updated_at    DateTime   @updatedAt      // Automatically updated timestamp
+
+  recordings    Recording[] // A conference can have many recordings
+  sessions      Session[]   // A conference can have many sessions
+}
+
+model Recording {
+  id            BigInt     @id @default(autoincrement()) // Primary Key
+  title         String     // Recording title
+  conference_id BigInt     // Foreign key to Conference
+  tenantId      Int
+  file_path     String     // Path to the recording file
+  created_at    DateTime   @default(now()) // Timestamp when the recording is created
+  updated_at    DateTime   @updatedAt      // Automatically updated timestamp
+
+  conference    Conference @relation(fields: [conference_id], references: [id]) // Relationship with Conference
+}
+
+model Session {
+  id              BigInt       @id @default(autoincrement()) // Primary Key
+  conference_id   BigInt       // Foreign key to Conference
+  session_name    String       // Session name
+  start_time      DateTime     // Session start time
+  end_time        DateTime?    // Session end time
+  recording_url   String       // URL of the recording
+  duration_seconds Int         // Session duration in seconds
+  file_size_mb    Decimal      @db.Decimal(10, 2) // File size in MB (with precision and scale)
+  created_at      DateTime     @default(now()) // Timestamp when the session is created
+  updated_at      DateTime     @updatedAt      // Automatically updated timestamp
+
+  conference      Conference   @relation(fields: [conference_id], references: [id]) // Relationship with Conference
+  participants    Participant[] // A session can have many participants
+}
+
+model Participant {
+  id              BigInt      @id @default(autoincrement()) // Primary Key
+  session_id      BigInt      // Foreign key to Session
+  user_id         BigInt      // Foreign key to User (this will be removed)
+  join_time       DateTime    // Time when the user joins the session
+  leave_time      DateTime    // Time when the user leaves the session
+  duration_seconds Int        // Duration of the user's participation in the session
+
+  session         Session     @relation(fields: [session_id], references: [id])  // Relationship with Session
+  // Remove user relation here
+}
